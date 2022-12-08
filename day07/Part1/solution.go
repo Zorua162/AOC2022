@@ -36,27 +36,14 @@ func main() {
 			if components[1] == "cd" {
 				// fmt.Println("cd")
 				cwd = components[2]
-			} else if components[1] == "ls" {
-
-			} 
+			}
 
 		} else {
 			// Its a file or a folder
-
-			// if the folder hasn't been created yet
-			created := files[cwd]
-
-			fmt.Println(created)
-
-			if created == nil {
-				files[cwd] = make([]string, 0)
-			}
-
 			files[cwd] = append(files[cwd], components[1])
 			intVal, _ := strconv.Atoi(components[0])
 			sizes[cwd] += intVal
 		}
-
 
 		// intVal, _ := strconv.Atoi(element)
 		// if (intVal> last) {
@@ -64,8 +51,8 @@ func main() {
 		// }
 		// last = intVal
 		// fmt.Println(index, element, components)
-	fmt.Println(files, sizes)
-	fmt.Println(count)
+		fmt.Println(files, sizes)
+		fmt.Println(count)
 	}
 
 }
