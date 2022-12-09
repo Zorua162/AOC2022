@@ -14,6 +14,11 @@ func check(e error) {
 	}
 }
 
+func search_file_tree(start string, files map[string][]string, sizes map[string]int, total_sizes map[string]int) map[string]int {
+
+	return total_sizes
+}
+
 func main() {
 	// dat, err := os.ReadFile("./../dat")
 	dat, err := os.ReadFile("./../example_dat")
@@ -53,6 +58,10 @@ func main() {
 		// fmt.Println(index, element, components)
 		fmt.Println(files, sizes)
 		fmt.Println(count)
+		total_sizes := make(map[string]int)
+		total_sizes = search_file_tree("/", files, sizes, total_sizes)
 	}
+
+	// Recursive function to dive into the map and add the values as it comes back out
 
 }
