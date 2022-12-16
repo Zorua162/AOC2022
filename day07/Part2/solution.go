@@ -105,15 +105,14 @@ func (dir Directory) add_dir(add_dir Directory) Directory {
 	return dir
 }
 
-func print_data_set(dir Directory, depth int, total int) int {
+func print_data_set(dir Directory, depth int, amount_needed int, possible_dir Directory) (int, Directory) {
 	prefix := ""
 	for i := 0; i < depth; i++ {
 		prefix += " "
 	}
 	outString := prefix + "- " + dir.name + " (dir, size=" + strconv.Itoa(dir.size) + ")"
-	if dir.getSize() < 100000 {
-		outString += "***"
-		total += dir.getSize()
+	if dir.getSize() < possible_dir.getSize() && dir.getSize() > amount_needed {
+		possible_dir = dir
 	}
 	fmt.Println(outString)
 	prefix += "  "
@@ -130,16 +129,16 @@ func print_data_set(dir Directory, depth int, total int) int {
 				fmt.Println(fileOut)
 			} else {
 				lower_dir := obj.(Directory)
-				total = print_data_set(lower_dir, depth+1, total)
+				amount_needed, possible_dir = print_data_set(lower_dir, depth+1, amount_needed, possible_dir)
 			}
 		}
 	}
-	return total
+	return amount_needed, possible_dir
 }
 
 func main() {
-	// dat, err := os.ReadFile("./../dat")
-	dat, err := os.ReadFile("./../example_dat")
+	dat, err := os.ReadFile("./../dat")
+	// dat, err := os.ReadFile("./../example_dat")
 	check(err)
 
 	s := strings.Split(string(dat), "\n")
@@ -185,14 +184,32 @@ func main() {
 		fmt.Println(dir.getName() + " " + strconv.Itoa(dir.getSize()))
 	}
 
-	new_total := print_data_set(current_dir, 0, 0)
+	// print_data_set(current_dir, 0, 0)
 
-	fmt.Println(total)
-	fmt.Println(new_total)
+	// Calculate total needed
 
-	// 1148367 too low
-	// 1534236 guess too low
-	// 1148367
-	// 48381165
+	total_avail_filesys := 70000000
+
+	total_needed := 30000000
+
+	total_allowed := total_avail_filesys - total_needed
+
+	fmt.Println(total_allowed)
+
+	current_avail := total_avail_filesys - current_dir.getSize()
+
+	fmt.Println(current_avail)
+
+	amount_needed := total_needed - current_avail
+
+	fmt.Println(amount_needed)
+
+	// Need to find the smallest file that is larger than amount_needed
+
+	_, possible_dir := print_data_set(current_dir, 0, amount_needed, current_dir)
+
+	// fmt.Println(total)
+	// fmt.Println(new_total)
+	fmt.Println(possible_dir)
 
 }
