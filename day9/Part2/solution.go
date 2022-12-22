@@ -66,17 +66,14 @@ func move_tail_right(object Object, tail Tail) Tail {
 	return tail
 }
 
-func move_right(head Head, tail_list []Tail, amount int) (Head, []Tail) {
-	for i := 0; i < amount; i++ {
-		head.location.x++
-		tail_list[0] = move_tail_right(head, tail_list[0])
-		for i := range tail_list[1:] {
-			tail_list[i+1] = move_tail_right(tail_list[i], tail_list[i+1])
-		}
-		// fmt.Println(head, tail_list)
-		print_data(head, tail_list)
+func move_right(head Head, tail_list []Tail) (Head, []Tail) {
+	head.location.x++
+	tail_list[0] = move_tail_right(head, tail_list[0])
+	for i := range tail_list[1:] {
+		tail_list[i+1] = move_tail_right(tail_list[i], tail_list[i+1])
 	}
-
+	// fmt.Println(head, tail_list)
+	print_data(head, tail_list)
 	return head, tail_list
 }
 
@@ -92,15 +89,13 @@ func move_tail_left(object Object, tail Tail) Tail {
 	return tail
 }
 
-func move_left(head Head, tail_list []Tail, amount int) (Head, []Tail) {
-	for i := 0; i < amount; i++ {
-		head.location.x--
-		tail_list[0] = move_tail_left(head, tail_list[0])
-		for i := range tail_list[1:] {
-			tail_list[i+1] = move_tail_left(tail_list[i], tail_list[i+1])
-		}
-		print_data(head, tail_list)
+func move_left(head Head, tail_list []Tail) (Head, []Tail) {
+	head.location.x--
+	tail_list[0] = move_tail_left(head, tail_list[0])
+	for i := range tail_list[1:] {
+		tail_list[i+1] = move_tail_left(tail_list[i], tail_list[i+1])
 	}
+	print_data(head, tail_list)
 	return head, tail_list
 }
 
@@ -121,15 +116,13 @@ func move_tail_up(object Object, tail Tail) Tail {
 	return tail
 }
 
-func move_up(head Head, tail_list []Tail, amount int) (Head, []Tail) {
-	for i := 0; i < amount; i++ {
-		head.location.y++
-		tail_list[0] = move_tail_up(head, tail_list[0])
-		for i := range tail_list[1:] {
-			tail_list[i+1] = move_tail_up(tail_list[i], tail_list[i+1])
-		}
-		print_data(head, tail_list)
+func move_up(head Head, tail_list []Tail) (Head, []Tail) {
+	head.location.y++
+	tail_list[0] = move_tail_up(head, tail_list[0])
+	for i := range tail_list[1:] {
+		tail_list[i+1] = move_tail_up(tail_list[i], tail_list[i+1])
 	}
+	print_data(head, tail_list)
 	return head, tail_list
 }
 
@@ -144,32 +137,33 @@ func move_tail_down(object Object, tail Tail) Tail {
 	return tail
 }
 
-func move_down(head Head, tail_list []Tail, amount int) (Head, []Tail) {
-	for i := 0; i < amount; i++ {
-		head.location.y--
-		tail_list[0] = move_tail_down(head, tail_list[0])
-		for i := range tail_list[1:] {
-			tail_list[i+1] = move_tail_down(tail_list[i], tail_list[i+1])
-		}
-		print_data(head, tail_list)
+func move_down(head Head, tail_list []Tail) (Head, []Tail) {
+	head.location.y--
+	tail_list[0] = move_tail_down(head, tail_list[0])
+	for i := range tail_list[1:] {
+		tail_list[i+1] = move_tail_down(tail_list[i], tail_list[i+1])
 	}
-
+	print_data(head, tail_list)
 	return head, tail_list
 }
 
-func move_head(head Head, tail_list []Tail, direction string, amount string) (Head, []Tail) {
+func move_head(head Head, tail_list []Tail, direction string, amount string, f *os.File) (Head, []Tail) {
 	amount_int, _ := strconv.Atoi(amount)
-	if direction == "R" {
-		head, tail_list = move_right(head, tail_list, amount_int)
-	}
-	if direction == "L" {
-		head, tail_list = move_left(head, tail_list, amount_int)
-	}
-	if direction == "U" {
-		head, tail_list = move_up(head, tail_list, amount_int)
-	}
-	if direction == "D" {
-		head, tail_list = move_down(head, tail_list, amount_int)
+	for i := 0; i < amount_int; i++ {
+		if direction == "R" {
+			head, tail_list = move_right(head, tail_list)
+		}
+		if direction == "L" {
+			head, tail_list = move_left(head, tail_list)
+		}
+		if direction == "U" {
+			head, tail_list = move_up(head, tail_list)
+		}
+		if direction == "D" {
+			head, tail_list = move_down(head, tail_list)
+		}
+		print_board_from_visited(head, tail_list, f)
+		f.WriteString("\n\n-----\n")
 	}
 	return head, tail_list
 }
@@ -251,7 +245,8 @@ func add_tails(locations []Location, tails []Tail) []Location {
 	return locations
 }
 
-func print_board_from_visited(head Head, tail Tail, tail_list []Tail, f *os.File) {
+func print_board_from_visited(head Head, tail_list []Tail, f *os.File) *os.File {
+	tail := tail_list[len(tail_list)-1]
 	visited := tail.previous_locations
 	visited_and_head := append(visited, head.location)
 	visited_and_head = add_tails(visited_and_head, tail_list)
@@ -290,6 +285,7 @@ func print_board_from_visited(head Head, tail Tail, tail_list []Tail, f *os.File
 		// fmt.Println(line)
 		f.WriteString(strings.Join(line, "") + "\n")
 	}
+	return f
 
 }
 
@@ -337,17 +333,18 @@ func main() {
 	defer f.Close()
 
 	for i := 0; i < len(s); i += 2 {
+		new_lines := "\n\n---\n"
+		f.WriteString(new_lines + s[i] + s[i+1] + new_lines)
 		// intVal, _ := strconv.Atoi(element)
 		// if (intVal> last) {
 		// 	count += 1
 		// }
 		// last = intVal
 		fmt.Println(s[i], s[i+1])
-		head, tail_list = move_head(head, tail_list, s[i], s[i+1])
+		head, tail_list = move_head(head, tail_list, s[i], s[i+1], f)
 		// fmt.Println(head, tail_list)
 		// print_data(head, tail_list)
 		last_tail = tail_list[len(tail_list)-1]
-		print_board_from_visited(head, last_tail, tail_list, f)
 	}
 	count = len(last_tail.previous_locations)
 	fmt.Println(count)
