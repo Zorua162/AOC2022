@@ -126,13 +126,6 @@ func move_tail_right(object Object, tail Tail) Tail {
 func move_right(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.x++
 	tail_list[0] = move_tail_right(head, tail_list[0])
-	tail_list[1] = detect_and_move_tail(head, tail_list[0], tail_list[1])
-	// First tail is free
-	// Other tails require figuring out what kind of move was just done i.e R or U
-	// So although H was U, 1 was R so 2 needs 1,2 move_tail_right
-	for i := range tail_list[2:] {
-		tail_list[i+2] = detect_and_move_tail(tail_list[i], tail_list[i+1], tail_list[i+2])
-	}
 	// fmt.Println(head, tail_list)
 	print_data(head, tail_list)
 	return head, tail_list
@@ -153,10 +146,6 @@ func move_tail_left(object Object, tail Tail) Tail {
 func move_left(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.x--
 	tail_list[0] = move_tail_left(head, tail_list[0])
-	tail_list[1] = detect_and_move_tail(head, tail_list[0], tail_list[1])
-	for i := range tail_list[1:] {
-		tail_list[i+1] = move_tail_left(tail_list[i], tail_list[i+1])
-	}
 	print_data(head, tail_list)
 	return head, tail_list
 }
@@ -181,9 +170,6 @@ func move_tail_up(object Object, tail Tail) Tail {
 func move_up(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.y++
 	tail_list[0] = move_tail_up(head, tail_list[0])
-	for i := range tail_list[1:] {
-		tail_list[i+1] = move_tail_up(tail_list[i], tail_list[i+1])
-	}
 	print_data(head, tail_list)
 	return head, tail_list
 }
@@ -202,9 +188,6 @@ func move_tail_down(object Object, tail Tail) Tail {
 func move_down(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.y--
 	tail_list[0] = move_tail_down(head, tail_list[0])
-	for i := range tail_list[1:] {
-		tail_list[i+1] = move_tail_down(tail_list[i], tail_list[i+1])
-	}
 	print_data(head, tail_list)
 	return head, tail_list
 }
@@ -224,6 +207,15 @@ func move_head(head Head, tail_list []Tail, direction string, amount string, f *
 		if direction == "D" {
 			head, tail_list = move_down(head, tail_list)
 		}
+
+		tail_list[1] = detect_and_move_tail(head, tail_list[0], tail_list[1])
+		// First tail is free
+		// Other tails require figuring out what kind of move was just done i.e R or U
+		// So although H was U, 1 was R so 2 needs 1,2 move_tail_right
+		for i := range tail_list[2:] {
+			tail_list[i+2] = detect_and_move_tail(tail_list[i], tail_list[i+1], tail_list[i+2])
+		}
+
 		print_board_from_visited(head, tail_list, f)
 		f.WriteString("\n\n-----\n")
 	}
