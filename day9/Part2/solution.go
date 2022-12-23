@@ -51,6 +51,63 @@ func (tail Tail) add_location() Tail {
 	return tail
 }
 
+func detemine_direction(prev Object, moved Tail) string {
+	var direction string
+	// get the difference between their X and Y
+	// Whichever is larger is Axis that it moved
+	// If X positive then right, if Y positive then up
+	x_diff := prev.getLocation().x - moved.location.x
+	y_diff := prev.getLocation().y - moved.location.y
+	// fmt.Println(x_diff, y_diff)
+
+	if x_diff == y_diff {
+		return ""
+	}
+
+	if x_diff > y_diff {
+		// Moved in the x direction
+		if x_diff > 0 {
+			// H:2 1:1
+			// 2 - 1 = 1
+			// :. positive is up
+			direction = "R"
+		} else {
+			direction = "L"
+		}
+	} else {
+		if y_diff > 0 {
+			direction = "U"
+		} else {
+			direction = "D"
+		}
+	}
+	return direction
+}
+
+func detect_and_move_tail(previous_mover Object, moved_tail Tail, moving_tail Tail) Tail {
+	// Determine which way previous_mover nad moved_tail
+
+	direction := detemine_direction(previous_mover, moved_tail)
+	// fmt.Println(direction)
+	if direction == "R" {
+		// fmt.Println("Moving tail right")
+		moving_tail = move_tail_right(moved_tail, moving_tail)
+	}
+	if direction == "U" {
+		moving_tail = move_tail_up(moved_tail, moving_tail)
+	}
+
+	if direction == "L" {
+		moving_tail = move_tail_left(moved_tail, moving_tail)
+	}
+
+	if direction == "D" {
+		moving_tail = move_tail_down(moved_tail, moving_tail)
+	}
+
+	return moving_tail
+}
+
 func move_tail_right(object Object, tail Tail) Tail {
 
 	if object.getLocation().x-2 == tail.getLocation().x {
@@ -69,8 +126,12 @@ func move_tail_right(object Object, tail Tail) Tail {
 func move_right(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.x++
 	tail_list[0] = move_tail_right(head, tail_list[0])
-	for i := range tail_list[1:] {
-		tail_list[i+1] = move_tail_right(tail_list[i], tail_list[i+1])
+	tail_list[1] = detect_and_move_tail(head, tail_list[0], tail_list[1])
+	// First tail is free
+	// Other tails require figuring out what kind of move was just done i.e R or U
+	// So although H was U, 1 was R so 2 needs 1,2 move_tail_right
+	for i := range tail_list[2:] {
+		tail_list[i+2] = detect_and_move_tail(tail_list[i], tail_list[i+1], tail_list[i+2])
 	}
 	// fmt.Println(head, tail_list)
 	print_data(head, tail_list)
@@ -92,6 +153,7 @@ func move_tail_left(object Object, tail Tail) Tail {
 func move_left(head Head, tail_list []Tail) (Head, []Tail) {
 	head.location.x--
 	tail_list[0] = move_tail_left(head, tail_list[0])
+	tail_list[1] = detect_and_move_tail(head, tail_list[0], tail_list[1])
 	for i := range tail_list[1:] {
 		tail_list[i+1] = move_tail_left(tail_list[i], tail_list[i+1])
 	}
@@ -266,20 +328,18 @@ func print_board_from_visited(head Head, tail_list []Tail, f *os.File) *os.File 
 		}
 	}
 
-	for i, tail := range tail_list {
-		board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), strconv.Itoa(i+1))
-	}
-
 	for _, pos := range visited {
 		board = set_pos(board, translate_pos(min_x, pos.x), translate_pos(min_y, pos.y), "#")
 	}
-
 	board = set_pos(board, translate_pos(min_x, 0), translate_pos(min_y, 0), "S")
 
 	board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), "T")
 
-	board = set_pos(board, translate_pos(min_x, head.location.x), translate_pos(min_y, head.location.y), "H")
+	for i, tail := range tail_list {
+		board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), strconv.Itoa(i+1))
+	}
 
+	board = set_pos(board, translate_pos(min_x, head.location.x), translate_pos(min_y, head.location.y), "H")
 
 	for _, line := range board {
 		// fmt.Println(line)
@@ -300,9 +360,9 @@ func print_data(head Head, tail_list []Tail) {
 }
 
 func main() {
-	// dat, err := os.ReadFile("./../smol_dat")
+	dat, err := os.ReadFile("./../smol_dat")
 	// dat, err := os.ReadFile("./../dat")
-	dat, err := os.ReadFile("./../test_dat")
+	// dat, err := os.ReadFile("./../test_dat")
 	// dat, err := os.ReadFile("./../example_dat")
 	// dat, err := os.ReadFile("./../med_exa_dat")
 
@@ -324,7 +384,6 @@ func main() {
 
 	// var last int = math.MaxInt64
 	var last_tail Tail
-
 
 	f, err := os.Create("out.txt")
 	if err != nil {
