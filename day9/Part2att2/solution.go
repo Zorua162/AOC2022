@@ -61,12 +61,51 @@ func move_to_object(object Object, tail Tail) Tail {
 	// Otherwise, if the head and tail aren't touching and aren't in the same row or
 	// column, the tail always moves one step diagonally to keep up:
 
-	if tail.tail != nil {
-		tail.tail = move_to_object(tail, *tail.tail)
+	// Check if two steps directly up or down and move to it
+	x_diff := object.getLocation().x - tail.location.x
+	y_diff := object.getLocation().y - tail.location.y
+
+	// Horizontal direct move
+	// if abs(x_diff) == 2 && y_diff == 0 {
+	// 	// Directly left or right
+	// 	if x_diff > 0 {
+	// 		// Positive so the tail is to the left and it needs to go right one
+	// 		tail.location.x++
+	// 	} else {
+	// 		tail.location.x--
+	// 	}
+	// }
+	// // Vertical direct move
+	// if abs(y_diff) == 2 && x_diff == 0 {
+	// 	if y_diff > 0 {
+	// 		tail.location.y++
+	// 	} else {
+	// 		tail.location.y--
+	// 	}
+	// }
+
+	// Figure out the direction that it needs to move diagonally
+	var y_add int
+	if y_diff > 0 && abs(y_diff) == 2 {
+		y_add = 1
+	} else {
+		y_add = -1
+	}
+	var x_add int
+	if x_diff > 0 && abs(x_diff) == 2 {
+		x_add = 1
+	} else {
+		x_add = -1
 	}
 
-	return tail
+	tail.location.x = tail.location.x + x_add
+	tail.location.y = tail.location.y + y_add
 
+	if tail.tail != nil {
+		tails_tail := move_to_object(tail, *tail.tail)
+		tail.tail = &tails_tail
+	}
+	return tail
 }
 
 func move_tail_right(head Head, tail Tail) Tail {
@@ -121,9 +160,11 @@ func move_tail_down(head Head, tail Tail) Tail {
 	return tail
 }
 
-func move_head(head Head, tail Tail, direction string) (Head, Tail) {
+func move_head(head Head, direction string) Head {
+	fmt.Println(direction)
 	if direction == "R" {
 		head.location.x++
+		fmt.Println("Moved right")
 	}
 	if direction == "L" {
 		head.location.x--
@@ -134,7 +175,7 @@ func move_head(head Head, tail Tail, direction string) (Head, Tail) {
 	if direction == "D" {
 		head.location.y--
 	}
-	return head, tail
+	return head
 }
 
 func get_exteme_vals(vals []int) (int, int) {
@@ -199,9 +240,37 @@ func get_range(min, max int) int {
 	return max - min + 1
 }
 
-func print_board_from_visited(head Head, tail Tail) {
+func (loc Location) to_string() string {
+	out_str := ""
+	out_str += strconv.Itoa(loc.x) + ", " + strconv.Itoa(loc.y)
+	return out_str
+}
+
+func add_tails(locations []Location, tail *Tail) []Location {
+	if tail.tail != nil {
+		locations = add_tails(locations, tail.tail)
+	}
+
+	for _, location := range tail.previous_locations {
+		locations = append(locations, location)
+	}
+	return locations
+}
+
+func add_tail_pos(board [][]string, tail *Tail, val int) [][]string {
+	current_tail := *tail
+	board = set_pos(board, current_tail.location.x, current_tail.location.y, strconv.Itoa(val))
+	if tail.tail != nil {
+		val--
+		board = add_tail_pos(board, tail.tail, val)
+	}
+	return board
+}
+
+func print_board_from_visited(head Head, tail Tail, f *os.File) *os.File {
 	visited := tail.previous_locations
 	visited_and_head := append(visited, head.location)
+	visited_and_head = add_tails(visited_and_head, &tail)
 	min_x, max_x := get_extreme_x(visited_and_head)
 	min_y, max_y := get_extreme_y(visited_and_head)
 	// Create the board based on the difference between mins and maxes
@@ -218,32 +287,33 @@ func print_board_from_visited(head Head, tail Tail) {
 		}
 	}
 
+	board = add_tail_pos(board, &tail, 9)
+
 	for _, pos := range visited {
 		board = set_pos(board, translate_pos(min_x, pos.x), translate_pos(min_y, pos.y), "#")
 	}
-
 	board = set_pos(board, translate_pos(min_x, 0), translate_pos(min_y, 0), "S")
 
-	board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), "T")
+	// board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), "T")
+
+	// for i, tail := range tail_list {
+	// 	board = set_pos(board, translate_pos(min_x, tail.location.x), translate_pos(min_y, tail.location.y), strconv.Itoa(i+1))
+	// }
 
 	board = set_pos(board, translate_pos(min_x, head.location.x), translate_pos(min_y, head.location.y), "H")
-
-	f, err := os.Create("out.txt")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer f.Close()
 
 	for _, line := range board {
 		// fmt.Println(line)
 		f.WriteString(strings.Join(line, "") + "\n")
 	}
+	f.WriteString("--------\n\n")
+	return f
 
 }
 
 func main() {
-	// dat, err := os.ReadFile("./../smol_dat")
-	dat, err := os.ReadFile("./../dat")
+	dat, err := os.ReadFile("./../smol_dat")
+	// dat, err := os.ReadFile("./../dat")
 	// dat, err := os.ReadFile("./../test_dat")
 	// dat, err := os.ReadFile("./../example_dat")
 	check(err)
@@ -263,6 +333,12 @@ func main() {
 	}
 	head := Head{Location{0, 0}, &tail}
 
+	f, err := os.Create("out.txt")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer f.Close()
+
 	for i := 0; i < len(s); i += 2 {
 		// intVal, _ := strconv.Atoi(element)
 		// if (intVal> last) {
@@ -271,15 +347,16 @@ func main() {
 		// last = intVal
 		fmt.Println(s[i], s[i+1])
 		amount, _ := strconv.Atoi(s[i+1])
-		for i := 0; i < amount; i++ {
-			head, tail = move_head(head, tail, s[i])
+		f.WriteString("\n" + s[i] + s[i+1] + "\n")
+		for j := 0; j < amount; j++ {
+			head = move_head(head, s[i])
+			fmt.Println(head)
+			tail = move_to_object(head, tail)
+			print_board_from_visited(head, tail, f)
 			fmt.Println(head, tail)
-			tail = tail.move_to_object(head)
 		}
 	}
 	count = len(tail.previous_locations)
 	fmt.Println(count)
-
-	// 5079 too low
 
 }
